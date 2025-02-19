@@ -1,16 +1,19 @@
+import 'package:fe/models/User.dart';
 import 'package:fe/pages/ChatRoom.dart';
 import 'package:flutter/material.dart';
 import 'package:fe/models/Auction_Items.dart';
 import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:intl/intl.dart';
 
+import '../models/Auction.dart';
 import '../services/ApiBiddingService.dart';
 import '../services/ApiPaymentService.dart';
 import 'HomePage.dart';
 import 'PaymentWebView.dart';
 
 class Auction_ItemsDetailPage extends StatefulWidget {
-  final AuctionItems item;
+  final Auction? item;
+
   const Auction_ItemsDetailPage({super.key, required this.item});
   @override
   _Auction_ItemsDetailPageState createState() =>
@@ -21,34 +24,37 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   late ApiAuction_ItemsService apiService;
   late ApiBiddingService biddingService = ApiBiddingService();
 
-  List<AuctionItems> similarItems = [];
+  List<Auction> similarItems = [];
   bool isLoadingSimilarItems = true;
   late TextEditingController _bidController; // ✅ Ô nhập giá đấu
   bool isPlacingBid = false; // Trạng thái loading khi đặt giá
-  AuctionItems? updatedItem; // 🔥 Biến giữ dữ liệu mới
+  Auction? updatedItem; // 🔥 Biến giữ dữ liệu mới
   double? price; // 🔥 Biến lưu trữ giá đã yêu cầu gửi
-
+  late String? sellerid;
   @override
   void initState() {
     super.initState();
+    sellerid = widget.item?.user!.id;
+
+    // print("user: ${widget.item.seller != null ? widget.item.seller!.id : "No Seller"}");
     apiService = ApiAuction_ItemsService();
     _bidController = TextEditingController();
-    fetchItemDetails(); // 🔥 Gọi API để lấy giá mới nhất
+   // fetchItemDetails(); // 🔥 Gọi API để lấy giá mới nhất
     ApiBiddingService biddingService = ApiBiddingService();
     // 🔥 Lắng nghe WebSocket để cập nhật giá đấu giá ngay lập tức
-    biddingService.onNewBidReceived = (double newPrice) {
-      print("🔄 WebSocket received new price: $newPrice");
-      setState(() {
-        if (updatedItem != null) {
-          updatedItem!.currentPrice = newPrice; // ✅ Cập nhật giá trong UI
-        }
-      });
-    };
+    // biddingService.onNewBidReceived = (double newPrice) {
+    //   print("🔄 WebSocket received new price: $newPrice");
+    //   setState(() {
+    //     if (updatedItem != null) {
+    //       updatedItem!.currentPrice = newPrice; // ✅ Cập nhật giá trong UI
+    //     }
+    //   });
+    // };
     fetchSimilarItems();
     fetchUpcomingItems();
   }
 
-  List<AuctionItems> upcomingItems = [];
+  List<Auction> upcomingItems = [];
   bool isLoadingUpcomingItems = true;
 
   @override
@@ -60,8 +66,8 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   // 🔥 Gọi API để lấy giá hiện tại
   Future<void> fetchItemDetails() async {
     try {
-      var newItem = await apiService.getItemById(widget.item.itemId!);
-      print("✅ API returned item details: ${newItem.toJson()}");
+      var newItem = await apiService.getItemById(widget.item!.itemId);
+   //   print("✅ API returned item details: ${newItem.toJson()}");
 
       setState(() {
         updatedItem = newItem; // ✅ Cập nhật dữ liệu mới từ API
@@ -71,8 +77,9 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
     }
   }
 
-  // 🔥 Đặt giá đấu giá mới
+ // 🔥 Đặt giá đấu giá mới
   Future<void> placeBid() async {
+    print(widget.item?.user);
     double? bidAmount = double.tryParse(_bidController.text);
     if (bidAmount == null || bidAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -80,24 +87,19 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
       );
       return;
     }
-
     setState(() => isPlacingBid = true);
-
-    bool success = await biddingService.placeBid(widget.item.itemId!, bidAmount);
+    bool success = await ApiBiddingService().placeBid(widget.item!.itemId!, widget.item?.user!.id, bidAmount);
     setState(() => isPlacingBid = false);
-
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("🎉 Đã đặt giá thành công: \$${bidAmount.toStringAsFixed(2)}")),
       );
-
-      // ✅ CẬP NHẬT UI NGAY LẬP TỨC
-      setState(() {
-        if (updatedItem != null) {
-          updatedItem!.currentPrice = bidAmount; // 🔥 Cập nhật UI ngay lập tức
-        }
-      });
-
+      // // ✅ Cập nhật UI ngay lập tức
+      // setState(() {
+      //   if (updatedItem != null) {
+      //     updatedItem!.currentPrice = bidAmount;
+      //   }
+      // });
       fetchItemDetails(); // 🔥 Gọi API để lấy giá mới nhất
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,6 +107,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
       );
     }
   }
+
 
 
 
@@ -139,7 +142,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
 
   /// Gọi API để lấy danh sách sản phẩm liên quan
   Future<void> fetchSimilarItems() async {
-    String? categoryName = widget.item.category?.category_name;
+    String? categoryName = widget.item?.category?.category_name;
     if (categoryName == null || categoryName.isEmpty) {
       print("⚠️ Category name is null or empty.");
       setState(() => isLoadingSimilarItems = false);
@@ -174,18 +177,20 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   @override
   Widget build(BuildContext context) {
     final item = updatedItem ?? widget.item; // 🔥 Sử dụng giá mới nếu có
-    print("🔥 Hiển thị giá: Current Price = ${item.currentPrice}, Starting Price = ${item.startingPrice}");
+    // print("🔥 Hiển thị giá: Current Price = ${item.currentPrice}, Starting Price = ${item.startingPrice}");
 
-    String imageUrl =
-        (widget.item.images != null && widget.item.images!.isNotEmpty)
-            ? widget.item.images!.first
+    String? imageUrl =
+        (widget.item?.imagesList != null)
+            ? widget.item?.imagesList!.first
             : 'https://via.placeholder.com/150';
 
-    String timeLeft = getTimeLeft(widget.item.endDate);
+    String timeLeft = getTimeLeft(widget.item?.endDate as DateTime?);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.item.itemName ?? 'Item Details'),
+        title: Text(widget.item?.itemName ?? 'Item Details'),
+        //title: Text(widget.item?.user?.id ?? 'Item Details'),
+
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -207,7 +212,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
           children: [
             /// Hình ảnh sản phẩm
             Image.network(
-              imageUrl,
+              imageUrl!,
               width: double.infinity,
               height: 300,
               fit: BoxFit.cover,
@@ -224,7 +229,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.item.itemName ?? 'No Name',
+                    widget.item?.itemName ?? 'No Name',
                     style: const TextStyle(
                         fontSize: 24, fontWeight: FontWeight.bold),
                   ),
@@ -233,7 +238,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                        'Price: \$${item.currentPrice ?? item.startingPrice ?? 0}',
+                        'Price: \$${item?.startingPrice ?? 0}',
                         style: const TextStyle(fontSize: 18)),
                     Text('Time Left: $timeLeft',
                         style:
@@ -274,12 +279,12 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                 String orderId = DateTime.now()
                     .millisecondsSinceEpoch
                     .toString(); // ✅ Tạo orderId duy nhất
-                String productId = widget.item.itemId
+                String? productId = widget.item?.itemId
                     .toString(); // 🔥 Chuyển `int?` thành `String`
 
                 String? paymentUrl = await apiPaymentService.createPayment(
-                  productId, // ✅ Đảm bảo `productId` là `String`
-                  widget.item.startingPrice ??
+                  productId!, // ✅ Đảm bảo `productId` là `String`
+                  widget.item?.startingPrice ??
                       0, // Vẫn giữ `startingPrice` là `double`
                   orderId,
                 );
@@ -325,7 +330,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(widget.item.description ?? 'No Description Available.'),
+            Text(widget.item?.description ?? 'No Description Available.'),
             const Divider(),
             const Text('Upcomming Items Available Now',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -345,8 +350,8 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                           itemBuilder: (context, index) {
                             var item = upcomingItems[index];
                             String itemImageUrl =
-                                (item.images != null && item.images!.isNotEmpty)
-                                    ? item.images!.first
+                                (item.imagesList != null && item.imagesList!.isNotEmpty)
+                                    ? item.imagesList!.first
                                     : 'https://via.placeholder.com/150';
 
                             return GestureDetector(
@@ -421,8 +426,8 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                           itemBuilder: (context, index) {
                             var item = similarItems[index];
                             String itemImageUrl =
-                                (item.images != null && item.images!.isNotEmpty)
-                                    ? item.images!.first
+                                (item.imagesList != null && item.imagesList!.isNotEmpty)
+                                    ? item.imagesList!.first
                                     : 'https://via.placeholder.com/150';
 
                             return GestureDetector(

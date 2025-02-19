@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/Auction.dart';
 import '../models/Auction_Items.dart';
 import '../services/ApiAuction_ItemsService.dart';
 import 'Auction_ItemsDetailPage.dart';
@@ -13,8 +14,8 @@ class AuctionsPage extends StatefulWidget {
 
 class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  Future<List<AuctionItems>> _featuredItems = Future.value([]);
-  Future<List<AuctionItems>> _upcomingItems = Future.value([]);
+  Future<List<Auction>> _featuredItems = Future.value([]);
+  Future<List<Auction>> _upcomingItems = Future.value([]);
 
   @override
   void initState() {
@@ -60,8 +61,8 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildAuctionList(Future<List<AuctionItems>> futureItems) {
-    return FutureBuilder<List<AuctionItems>>(
+  Widget _buildAuctionList(Future<List<Auction>> futureItems) {
+    return FutureBuilder<List<Auction>>(
       future: futureItems,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -83,7 +84,7 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildAuctionCard(AuctionItems item) {
+  Widget _buildAuctionCard(Auction item) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -99,9 +100,9 @@ class _AuctionsPageState extends State<AuctionsPage> with SingleTickerProviderSt
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (item.images != null && item.images!.isNotEmpty)
+            if (item.imagesList != null && item.imagesList!.isNotEmpty)
               Image.network(
-                item.images![0],
+                item.imagesList![0],
                 width: double.infinity,
                 height: 200,
                 fit: BoxFit.cover,

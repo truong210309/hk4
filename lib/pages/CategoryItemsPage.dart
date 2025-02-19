@@ -7,6 +7,7 @@ import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:fe/pages/Auction_ItemsPage.dart';
 import 'package:fe/pages/CategoryItemSearchPage.dart';
 
+import '../models/Auction.dart';
 import 'HomePage.dart';
 
 class CategoryItemPage extends StatefulWidget {
@@ -20,13 +21,24 @@ class _CategoryItemPageState extends State<CategoryItemPage> {
   final ApiCategoryService apiService = ApiCategoryService();
   final ApiAuction_ItemsService auctionService = ApiAuction_ItemsService();
   late Future<List<Category>> futureCategories;
-  late Future<List<AuctionItems>> futureAuctionItems;
-
+  late Future<List<Auction>> futureAuctionItems;
+  late Future<List<Auction>> futureAuction;
   @override
   void initState() {
     super.initState();
     futureCategories = apiService.getAllCategory();
+
     futureAuctionItems = auctionService.getAllAuctionItems();
+
+    futureAuction = auctionService.getAllAuction();
+    // futureAuction.then((items) {
+    //   print("📡 Fetched Auction Items: ${items.length} items"); // 🔥 Log số lượng item
+    //   for (var item in items) {
+    //     print("🔍 Item ID:  $item");
+    //   }
+    // }).catchError((error) {
+    //   print("🚨 Error fetching auction items: $error");
+    // });
   }
 
   @override
@@ -94,8 +106,9 @@ class _CategoryItemPageState extends State<CategoryItemPage> {
                 return ListView.builder(
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
-                    return FutureBuilder<List<AuctionItems>>(
-                      future: futureAuctionItems,
+                    return FutureBuilder<List<Auction>>(
+                      future: futureAuction,
+
                       builder: (context, itemSnapshot) {
                         if (itemSnapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
@@ -103,7 +116,10 @@ class _CategoryItemPageState extends State<CategoryItemPage> {
                           return Center(child: Text('Error: ${itemSnapshot.error}'));
                         }
 
-                        List<AuctionItems> auctionItems = itemSnapshot.data!
+                        // List<AuctionItems> auctionItems = itemSnapshot.data!
+                        //     .where((item) => item.category?.category_id == categories[index].category_id)
+                        //     .toList();
+                        List<Auction> auctionItems = itemSnapshot.data!
                             .where((item) => item.category?.category_id == categories[index].category_id)
                             .toList();
 
@@ -164,8 +180,10 @@ class _CategoryItemPageState extends State<CategoryItemPage> {
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(15),
                                             child: Image.network(
-                                              auctionItems[itemIndex].images?.isNotEmpty ?? false
-                                                  ? auctionItems[itemIndex].images!.first
+                                              // auctionItems[itemIndex].images?.isNotEmpty ?? false
+                                              //     ? auctionItems[itemIndex].images!.first
+                                              auctionItems[itemIndex].imagesList?.isNotEmpty ?? false
+                                                  ? auctionItems[itemIndex].imagesList!.first
                                                   : 'https://via.placeholder.com/150',
                                               width: 150,
                                               height: 150,

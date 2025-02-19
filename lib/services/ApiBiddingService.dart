@@ -1,79 +1,122 @@
+
+import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'package:fe/services/UrlAPI.dart';
 import 'package:stomp_dart_client/stomp.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
+
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiBiddingService {
+
+  final String apiUrl = "http://192.168.1.30:8080/api/bidding";
+  late WebSocketChannel channel;
+
   final String apiUrl = "${UrlAPI.url}/bidding";
-  // 192.168.1.134
-  // 10.130.53.23
+
 
   late StompClient stompClient;
+
   Function(double)? onNewBidReceived; // 🔥 Callback để cập nhật UI
 
   ApiBiddingService() {
     _connectWebSocket();
   }
-
+  // Kết nối WebSocket
   void _connectWebSocket() {
-    stompClient = StompClient(
-      config: StompConfig(
-        url: 'ws://192.168.1.134.159:8080/ws',
-        onConnect: (StompFrame frame) {
-          print("✅ Kết nối WebSocket thành công!");
 
-          stompClient.subscribe(
-            destination: '/topic/newbidding',
-            callback: (StompFrame frame) {
-              if (frame.body != null) {
-                var response = jsonDecode(frame.body!);
-                double newPrice = response; // Giá đấu giá mới
-
-                print("🔔 Giá mới nhận được: \$$newPrice");
-
-                // 🔥 Gọi callback để cập nhật UI ngay lập tức
-                if (onNewBidReceived != null) {
-                  onNewBidReceived!(newPrice);
-                }
-              }
-            },
-          );
-        },
-        onWebSocketError: (dynamic error) => print('🚨 Lỗi WebSocket: $error'),
-      ),
+    channel = WebSocketChannel.connect(
+      Uri.parse('ws://192.168.1.30:8080/ws'), // Kiểm tra URL
     );
-    stompClient.activate();
+
+    channel.stream.listen(
+          (message) {
+        if (message != null) {
+          try {
+            var response = jsonDecode(message);
+            print("📩 Dữ liệu nhận được từ WebSocket: $response");
+
+            // Kiểm tra nếu dữ liệu có chứa 'price'
+            if (response is Map<String, dynamic> && response.containsKey('price')) {
+              var priceValue = response['price'];
+
+              // Kiểm tra nếu giá trị không null
+              if (priceValue != null) {
+                double price = priceValue is double ? priceValue : double.tryParse(priceValue.toString()) ?? 0.0;
+                print("🔔 Giá mới nhận được: \$$price");
+
+
+    
+
+                if (onNewBidReceived != null) {
+                  onNewBidReceived!(price);
+                }
+              } else {
+                print("🚨 Giá trị 'price' là null: $response");
+              }
+            } else {
+              print("🚨 Dữ liệu phản hồi từ WebSocket không có 'price': $response");
+            }
+
+          } catch (e) {
+            print("🚨 Lỗi giải mã WebSocket message: $e");
+          }
+        }
+      },
+      onError: (error) {
+        print('🚨 Lỗi WebSocket: $error');
+        _reconnectWebSocket();
+      },
+      onDone: () {
+        print("❌ WebSocket đóng kết nối.");
+        _reconnectWebSocket();
+      },
+    );
   }
 
-  Future<bool> placeBid(int itemId, double bidAmount) async {
+  // Cố gắng kết nối lại WebSocket nếu không thành công
+  int reconnectAttempts = 0;
+  static const int maxReconnectAttempts = 5;
+
+  void _reconnectWebSocket() async {
+    if (reconnectAttempts >= maxReconnectAttempts) {
+      print("❌ Đã thử quá số lần, không thể kết nối lại WebSocket.");
+      return;
+    }
+
+    print("🔄 Đang thử kết nối lại WebSocket... (Lần $reconnectAttempts)");
+
+    await Future.delayed(const Duration(seconds: 3));
+    reconnectAttempts++;
+
+    if (channel.closeCode != null) {
+      print("🔄 Kết nối lại WebSocket...");
+      _connectWebSocket();
+    }
+  }
+
+  // Kiểm tra WebSocket kết nối trước khi gửi yêu cầu đặt giá
+  Future<bool> placeBid(int productId, String? sellerId, double bidAmount) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? userId = prefs.getString("userId");
+
       if (userId == null) {
         print("🚨 Người dùng chưa đăng nhập!");
         return false;
       }
-
-      if (!stompClient.connected) {
-        print("🚨 WebSocket chưa kết nối. Đang kết nối lại...");
-        _connectWebSocket();
-        await Future.delayed(const Duration(seconds: 2));
-      }
-
       var bidRequest = jsonEncode({
-        "itemId": itemId,
+        "productId": productId,
         "userId": userId,
-        "bidAmount": bidAmount,
+        "price": bidAmount,
+        "seller": sellerId,
       });
-
-      stompClient.send(
-        destination: '/app/create',
-        body: bidRequest,
-      );
-
-      print("✅ Đã gửi yêu cầu đặt giá: \$$bidAmount");
+      print("🔹 Gửi yêu cầu đặt giá: $bidRequest");
+      // Gửi thông điệp WebSocket
+      channel.sink.add(bidRequest);
+      print("✅ Đã gửi yêu cầu đặt giá: \$${bidAmount}");
       return true;
     } catch (e) {
       print("🚨 Lỗi đặt giá: $e");
