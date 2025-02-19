@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:fe/models/BiddingRequest.dart';
-import 'package:fe/models/BiddingResponse.dart';
-import 'package:fe/models/User.dart';
+import 'package:fe/models/ChatRoomResponse.dart';
 import 'package:fe/pages/ChatRoom.dart';
+import 'package:fe/services/ApiChatService.dart';
 import 'package:flutter/material.dart';
-import 'package:fe/models/Auction_Items.dart';
 import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +16,7 @@ import '../models/Auction.dart';
 import '../services/ApiPaymentService.dart';
 import 'HomePage.dart';
 import 'PaymentWebView.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class Auction_ItemsDetailPage extends StatefulWidget {
   final Auction? item;
@@ -29,6 +29,7 @@ class Auction_ItemsDetailPage extends StatefulWidget {
 
 class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   late ApiAuction_ItemsService apiService;
+  ApiChatService apiChatService = ApiChatService();
   StompClient? stompClient;
   List<Auction> similarItems = [];
   bool isLoadingSimilarItems = true;
@@ -37,8 +38,10 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   Auction? updatedItem; // 🔥 Biến giữ dữ liệu mới
   double? price; // 🔥 Biến lưu trữ giá đã yêu cầu gửi
   late String? sellerid;
-  late String? userId;
+  String? userId;
   late double? currentPrice = 0;
+  late DateTime? endDate = widget.item?.endDate;
+
   @override
   void initState() {
     super.initState();
@@ -52,14 +55,25 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
     fetchUpcomingItems();
     connectWebSocket();
     getUserId();
+    initializeDateFormatting('en', null).then((_) {
+      formatDate(endDate);
+    });
   }
 
   List<Auction> upcomingItems = [];
   bool isLoadingUpcomingItems = true;
 
-  @override
-  void dispose() {
-    super.dispose();
+  void formatDate(endDate) {
+    if (endDate != null) {
+      String formattedDate =
+          DateFormat('EEEE, dd/MM/yyyy HH:mm:ss', 'en').format(endDate);
+      setState(() {
+        endDate = formattedDate;
+      });
+      print(formattedDate);
+    } else {
+      print("Ngày kết thúc không hợp lệ");
+    }
   }
 
   void getUserId() async {
@@ -77,7 +91,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
     try {
       var newItem = await apiService.getItemById(widget.item!.itemId);
       setState(() {
-        updatedItem = newItem; // ✅ Cập nhật dữ liệu mới từ API
+        updatedItem = newItem;
       });
     } catch (e) {
       print("🚨 Lỗi khi tải sản phẩm mới: $e");
@@ -136,7 +150,7 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
       stompClient!.send(destination: "/app/create", body: messageJson);
       _bidController.clear();
     } else {
-      print("🚨 WebSocket vẫn chưa kết nối, tin nhắn không được gửi!");
+      print(" WebSocket vẫn chưa kết nối, tin nhắn không được gửi!");
     }
   }
 
@@ -150,7 +164,6 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
         isLoadingUpcomingItems = false;
       });
     } catch (e) {
-      print("🚨 Lỗi khi tải sản phẩm sắp tới: $e");
       setState(() => isLoadingUpcomingItems = false);
     }
   }
@@ -195,6 +208,23 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
     }
   }
 
+  Future<void> addRoom() async {
+    ChatRoomResponse response =
+        await apiChatService.createRoom(widget.item?.itemId, userId!);
+    print("Room response: $response");
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatRoom(
+            userName: userId != response.userId
+                ? (response.sellerName ?? '')
+                : (response.buyerName ?? ''),
+            roomId: response.roomId as int,
+            userId: userId ?? ''),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = updatedItem ?? widget.item;
@@ -204,6 +234,9 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
         : 'https://via.placeholder.com/150';
 
     String timeLeft = getTimeLeft(widget.item?.endDate);
+    String startDate = getTimeLeft(widget.item?.startDate);
+    String? sellerId = widget.item?.user?.id;
+    String? buyerId = userId;
 
     return Scaffold(
       appBar: AppBar(
@@ -258,6 +291,10 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                         style: const TextStyle(fontSize: 18)),
                     Text('Current Price: \$${currentPrice ?? 0}',
                         style: const TextStyle(fontSize: 18)),
+                    Text(
+                      'Start Date: $startDate',
+                      style: const TextStyle(fontSize: 16, color: Colors.red),
+                    ),
                     Text(
                       'Time Left: $timeLeft',
                       style: const TextStyle(fontSize: 16, color: Colors.red),
@@ -332,22 +369,17 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
             /// Mô tả sản phẩm
             const Text("Description",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const ChatRoom(),
-                  //   ),
-                  // );
-                },
-                child: isPlacingBid
-                    ? const CircularProgressIndicator()
-                    : const Text("ASK A QUESTION"),
+            if (userId != null && widget.item!.user!.id != userId)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: addRoom,
+                  child: isPlacingBid
+                      ? const CircularProgressIndicator()
+                      : const Text("ASK A QUESTION"),
+                ),
               ),
-            ),
+
             const SizedBox(height: 8),
             Text(widget.item?.description ?? 'No Description Available.'),
             const Divider(),

@@ -108,18 +108,3 @@ class _ChatListState extends State<ChatList> {
     );
   }
 }
-
-// class ChatScreen extends StatelessWidget {
-//   final String userName;
-//   final ChatMessageResponse message;
-
-//   const ChatScreen(this.userName, {required this.message, super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text(userName)),
-//       body: Center(child: Text("Màn hình chat với $userName")),
-//     );
-//   }
-// }

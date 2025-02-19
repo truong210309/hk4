@@ -74,8 +74,8 @@ class ChatRoomResponse {
     startingPrice = json["starting_price"];
     currentPrice = json["current_price"];
     imagesList = json["images"] != null ? json["images"].cast<String>() : [];
-    message = json["message"] != null
-        ? ChatMessageResponse.fromJson(json["message"])
-        : null;
+
+    imagesList =
+        json["images"] != null ? List<String>.from(json["images"]) : [];
   }
 }

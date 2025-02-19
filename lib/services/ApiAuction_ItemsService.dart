@@ -105,11 +105,7 @@ class ApiAuction_ItemsService {
 
   Future<AuctionItems?> getAuctionItemById(int id) async {
     try {
-      print("Sending GET request to: $urlAuctionItems/$id");
-
       final response = await http.get(Uri.parse("$urlAuctionItems/$id"));
-
-      print("Received response with status code: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         print("Response body: ${response.body}");
