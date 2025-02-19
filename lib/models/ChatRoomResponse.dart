@@ -8,9 +8,10 @@ class ChatRoomResponse {
   num? itemId;
   String? itemName;
   num? startingPrice;
-  num? currentPrice;
+  double? currentPrice;
   List<String>? imagesList;
   ChatMessageResponse? message;
+  List<ChatMessageResponse>? listMessages;
 
   ChatRoomResponse(
       {this.roomId,
@@ -22,7 +23,8 @@ class ChatRoomResponse {
       this.startingPrice,
       this.currentPrice,
       this.imagesList,
-      this.message});
+      this.message,
+      this.listMessages});
 
   ChatRoomResponse copyWith(
           {num? roomId,
@@ -32,7 +34,7 @@ class ChatRoomResponse {
           num? itemId,
           String? itemName,
           num? startingPrice,
-          num? currentPrice,
+          double? currentPrice,
           List<String>? imagesList,
           ChatMessageResponse? message}) =>
       ChatRoomResponse(
@@ -61,6 +63,11 @@ class ChatRoomResponse {
     if (message != null) {
       map["message"] = message?.toJson();
     }
+
+    if (listMessages != null) {
+      map["listMessages"] = listMessages?.map((msg) => msg.toJson()).toList();
+    }
+
     return map;
   }
 
@@ -73,7 +80,14 @@ class ChatRoomResponse {
     itemName = json["item_name"];
     startingPrice = json["starting_price"];
     currentPrice = json["current_price"];
-    imagesList = json["images"] != null ? json["images"].cast<String>() : [];
+    message = json["message"] != null
+        ? ChatMessageResponse.fromJson(json["message"])
+        : null;
+
+    listMessages = json["listMessages"] != null
+        ? List<ChatMessageResponse>.from(json["listMessages"]
+            .map((msg) => ChatMessageResponse.fromJson(msg)))
+        : [];
 
     imagesList =
         json["images"] != null ? List<String>.from(json["images"]) : [];

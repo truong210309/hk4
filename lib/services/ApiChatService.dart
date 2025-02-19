@@ -25,7 +25,6 @@ class ApiChatService {
           "Content-Type": "application/json",
         },
       );
-      print(response);
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         return jsonData.map((item) => ChatRoomResponse.fromJson(item)).toList();
