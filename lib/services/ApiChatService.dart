@@ -38,6 +38,30 @@ class ApiChatService {
     }
   }
 
+  Future<ChatRoomResponse> createRoom(int? itemId, String userId) async {
+    final String url = "$urlChat/room/$itemId";
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
+      final response = await http.post(Uri.parse(url),
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode({"buyerId": userId}));
+      print(response);
+      if (response.body.isNotEmpty && response.statusCode == 200) {
+        return ChatRoomResponse.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(
+            'Failed to load chat rooms. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching category data: $e');
+    }
+  }
+
   Future<List<ChatMessageResponse>> getAllMessageByRoomId(int roomId) async {
     final String url = "$urlChat/room/message/$roomId";
     try {
