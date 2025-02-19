@@ -4,6 +4,7 @@ import 'package:fe/pages/ChatRoom.dart';
 import 'package:fe/services/ApiChatService.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatList extends StatefulWidget {
   const ChatList({super.key});
@@ -30,7 +31,6 @@ class _ChatListState extends State<ChatList> {
     String? storedUserId = prefs.getString('userId');
 
     if (storedUserId != null) {
-      print("storedUserId: $storedUserId");
       setState(() {
         userId = storedUserId;
       });
@@ -85,10 +85,21 @@ class _ChatListState extends State<ChatList> {
                   : (chat.buyerName ?? ''),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            // subtitle: Text(chat.message,
-            //     maxLines: 1, overflow: TextOverflow.ellipsis),
-            // trailing:
-            //     Text(chat.time, style: const TextStyle(color: Colors.grey)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("item: ${chat.itemName!}",
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                // if (chat.message != null)
+                //   Text(chat.message?.content ?? "",
+                //       maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (chat.listMessages!.isNotEmpty)
+                  Text(
+                      "${chat.listMessages != null && chat.listMessages!.isNotEmpty ? chat.listMessages!.first.content : ""}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+              ],
+            ),
             onTap: () {
               Navigator.push(
                 context,
