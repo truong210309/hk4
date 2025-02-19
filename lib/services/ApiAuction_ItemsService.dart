@@ -50,9 +50,7 @@ class ApiAuction_ItemsService {
   Future<List<Auction>> getAllAuction() async {
     try {
       List<Auction> allItems = [];
-      final response = await http.get(Uri.parse('$urlAuctionItems'));
-
-      print("📡 Raw API Response: ${response.body}"); // 🔥 Debug API Response
+      final response = await http.get(Uri.parse(urlAuctionItems));
 
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body);
@@ -72,14 +70,11 @@ class ApiAuction_ItemsService {
       }
 
       return allItems; // ✅ Đảm bảo luôn có giá trị trả về
-
     } catch (e) {
       print("🚨 Error fetching auction items: $e");
       throw Exception("Error fetching auctionItems data: $e");
     }
   }
-
-
 
   Future<List<AuctionItems>> getAllAuctionItemsn() async {
     try {
@@ -229,8 +224,7 @@ class ApiAuction_ItemsService {
 
     final response =
         await http.get(Uri.parse('${UrlAPI.url}/auction/creator/$userId'));
-    // print("📢 API CALL: http://192.168.1.134:8080/api/auction/creator/$userId");
-    // print("📢 API RESPONSE STATUS: ${response.statusCode}");
+
     if (response.statusCode == 200) {
       try {
         final data = jsonDecode(response.body);
@@ -279,13 +273,12 @@ class ApiAuction_ItemsService {
 
       print("✅ API trả về giá mới nhất từ Bidding: $latestPrice");
 
-      return Auction.fromJson({...data['result'], 'startingPrice': latestPrice});
+      return Auction.fromJson(
+          {...data['result'], 'startingPrice': latestPrice});
     } else {
       throw Exception("Failed to load auction item");
     }
   }
-
-
 
   Future<bool> createAuctionItem(
       String itemName, Map<String, dynamic> itemData, File imageFile) async {
@@ -324,9 +317,6 @@ class ApiAuction_ItemsService {
 
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
-
-      // print("📢 API Response Code: ${response.statusCode}");
-      // print("📢 API Response Body: $responseBody");
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         // print("✅ Auction item created successfully!");

@@ -1,3 +1,4 @@
+import 'package:fe/models/BiddingResponse.dart';
 
 import 'Category.dart';
 import 'User.dart';
@@ -19,9 +20,26 @@ class Auction {
   Category? category;
   User? user;
   User? buyer;
+  BiddingResponse? bidding;
 
   Auction(
-      {this.itemId, this.itemName, this.description, this.imagesList, this.startingPrice, this.currentPrice, this.startDate, this.endDate, this.bidStep, this.status, this.issell, this.issoldout, this.ispaid, this.category, this.user, this.buyer});
+      {this.itemId,
+      this.itemName,
+      this.description,
+      this.imagesList,
+      this.startingPrice,
+      this.currentPrice,
+      this.startDate,
+      this.endDate,
+      this.bidStep,
+      this.status,
+      this.issell,
+      this.issoldout,
+      this.ispaid,
+      this.category,
+      this.user,
+      this.buyer,
+      this.bidding});
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -38,6 +56,11 @@ class Auction {
     map["isSell"] = issell;
     map["isSoldout"] = issoldout;
     map["isPaid"] = ispaid;
+
+    if (bidding != null) {
+      map["bidding"] = bidding?.toJson();
+    }
+
     if (category != null) {
       map["category"] = category?.toJson();
     }
@@ -50,24 +73,7 @@ class Auction {
     return map;
   }
 
-  Auction.fromJson(dynamic json){
-    // itemId = json["item_id"];
-    // itemName = json["item_name"];
-    // description = json["description"];
-    // imagesList = json["images"] != null ? List<String>.from(json["images"]) : [];
-    // startingPrice = json["starting_price"];
-    // currentPrice = json["current_price"];
-    // startDate = json["start_date"];
-    // endDate = json["end_date"];
-    // bidStep = json["bid_step"];
-    // status = json["status"];
-    // issell = json["isSell"];
-    // issoldout = json["isSoldout"];
-    // ispaid = json["isPaid"];
-    // category = json["category"] != null ? Category.fromJson(json["category"]) : null;
-    // user = json["user"] != null ? User.fromJson(json["user"]) : null;
-    // buyer = json["buyer"] != null ? User.fromJson(json["buyer"]) : null;
-
+  Auction.fromJson(dynamic json) {
     itemId = json["item_id"];
     itemName = json["item_name"];
     description = json["description"];
@@ -76,13 +82,15 @@ class Auction {
     ispaid = json["paid"] ?? false;
 
     if (json["start_date"] is List && json["start_date"].length == 3) {
-      startDate = DateTime(json["start_date"][0], json["start_date"][1], json["start_date"][2]);
+      startDate = DateTime(
+          json["start_date"][0], json["start_date"][1], json["start_date"][2]);
     } else {
       startDate = null;
     }
 
     if (json["end_date"] is List && json["end_date"].length == 3) {
-      endDate = DateTime(json["end_date"][0], json["end_date"][1], json["end_date"][2]);
+      endDate = DateTime(
+          json["end_date"][0], json["end_date"][1], json["end_date"][2]);
     } else {
       endDate = null;
     }
@@ -97,10 +105,12 @@ class Auction {
         : [];
 
     category =
-    json["category"] != null ? Category.fromJson(json["category"]) : null;
+        json["category"] != null ? Category.fromJson(json["category"]) : null;
     user = json["user"] != null ? User.fromJson(json["user"]) : null;
+    bidding = json["bidding"] != null
+        ? BiddingResponse.fromJson(json["bidding"])
+        : null;
 
-    // 🔥 Fix lỗi buyer: Chỉ gán nếu `json["buyer"]` là `Map`
     buyer = (json["buyer"] != null && json["buyer"] is Map)
         ? User.fromJson(json["buyer"])
         : null;

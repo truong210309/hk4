@@ -10,15 +10,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiChatService {
-<<<<<<< HEAD
-  // static const String baseUrl = "http://192.168.1.134:8080/api";
   static const String urlChat = "${UrlAPI.url}/chatroom";
-=======
-
-  static const String baseUrl = "http://192.168.1.134:8080/api";
-
-  static const String urlChat = "$baseUrl/chatroom";
->>>>>>> c710d42b5e2b0f26b092e429d1430b57e5eb9c8f
 
   Future<List<ChatRoomResponse>> getAllRoomByUser(String userId) async {
     final String url = "$urlChat/room/$userId";
@@ -59,7 +51,6 @@ class ApiChatService {
           "Content-Type": "application/json",
         },
       );
-      print(response);
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         return jsonData
@@ -130,7 +121,6 @@ class ApiChatService {
     if (response.statusCode == 200) {
       return ChatMessageResponse.fromJson(jsonDecode(response.body));
     } else {
-      print("❌ Lỗi ${response.statusCode}: ${response.body}");
       throw Exception(
           'Failed to send message. Status Code: ${response.statusCode}');
     }

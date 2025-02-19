@@ -14,7 +14,7 @@ import 'MyBidsPage.dart';
 
 class Homepage extends StatefulWidget {
   final int initialIndex;
- // final AuctionItems? selectedItem; // 🔥 Thêm tham số này
+  // final AuctionItems? selectedItem; // 🔥 Thêm tham số này
   final Auction? selectedItem;
   const Homepage({super.key, this.initialIndex = 0, this.selectedItem});
 
@@ -46,7 +46,7 @@ class _HomepageState extends State<Homepage> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     } else {
-      print("✅ Đã tìm thấy token và userId, tiếp tục đăng nhập!");
+      // print("✅ Đã tìm thấy token và userId, tiếp tục đăng nhập!");
     }
   }
 
@@ -64,8 +64,7 @@ class _HomepageState extends State<Homepage> {
 
     // Nếu có sản phẩm, thay thế trang đầu tiên bằng trang chi tiết
     if (_selectedItem != null) {
-  pages[0] = Auction_ItemsDetailPage(item: _selectedItem!);
-
+      pages[0] = Auction_ItemsDetailPage(item: _selectedItem!);
     }
 
     return pages;

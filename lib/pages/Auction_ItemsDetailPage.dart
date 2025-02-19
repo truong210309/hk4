@@ -1,12 +1,19 @@
+import 'dart:convert';
+
+import 'package:fe/models/BiddingRequest.dart';
+import 'package:fe/models/BiddingResponse.dart';
 import 'package:fe/models/User.dart';
 import 'package:fe/pages/ChatRoom.dart';
 import 'package:flutter/material.dart';
 import 'package:fe/models/Auction_Items.dart';
 import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:stomp_dart_client/stomp.dart';
+import 'package:stomp_dart_client/stomp_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
 
 import '../models/Auction.dart';
-import '../services/ApiBiddingService.dart';
 import '../services/ApiPaymentService.dart';
 import 'HomePage.dart';
 import 'PaymentWebView.dart';
@@ -22,8 +29,7 @@ class Auction_ItemsDetailPage extends StatefulWidget {
 
 class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   late ApiAuction_ItemsService apiService;
-  late ApiBiddingService biddingService = ApiBiddingService();
-
+  StompClient? stompClient;
   List<Auction> similarItems = [];
   bool isLoadingSimilarItems = true;
   late TextEditingController _bidController; // ✅ Ô nhập giá đấu
@@ -31,27 +37,21 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   Auction? updatedItem; // 🔥 Biến giữ dữ liệu mới
   double? price; // 🔥 Biến lưu trữ giá đã yêu cầu gửi
   late String? sellerid;
+  late String? userId;
+  late double? currentPrice = 0;
   @override
   void initState() {
     super.initState();
     sellerid = widget.item?.user!.id;
+    currentPrice = widget.item?.bidding?.price;
 
-    // print("user: ${widget.item.seller != null ? widget.item.seller!.id : "No Seller"}");
     apiService = ApiAuction_ItemsService();
     _bidController = TextEditingController();
-   // fetchItemDetails(); // 🔥 Gọi API để lấy giá mới nhất
-    ApiBiddingService biddingService = ApiBiddingService();
-    // 🔥 Lắng nghe WebSocket để cập nhật giá đấu giá ngay lập tức
-    // biddingService.onNewBidReceived = (double newPrice) {
-    //   print("🔄 WebSocket received new price: $newPrice");
-    //   setState(() {
-    //     if (updatedItem != null) {
-    //       updatedItem!.currentPrice = newPrice; // ✅ Cập nhật giá trong UI
-    //     }
-    //   });
-    // };
+
     fetchSimilarItems();
     fetchUpcomingItems();
+    connectWebSocket();
+    getUserId();
   }
 
   List<Auction> upcomingItems = [];
@@ -59,16 +59,23 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
 
   @override
   void dispose() {
-    _bidController.dispose();
     super.dispose();
+  }
+
+  void getUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? currentUserId = prefs.getString("userId");
+    if (currentUserId != null) {
+      setState(() {
+        userId = currentUserId;
+      });
+    }
   }
 
   // 🔥 Gọi API để lấy giá hiện tại
   Future<void> fetchItemDetails() async {
     try {
       var newItem = await apiService.getItemById(widget.item!.itemId);
-   //   print("✅ API returned item details: ${newItem.toJson()}");
-
       setState(() {
         updatedItem = newItem; // ✅ Cập nhật dữ liệu mới từ API
       });
@@ -77,9 +84,41 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
     }
   }
 
- // 🔥 Đặt giá đấu giá mới
+  void connectWebSocket() {
+    print("Đã kết nối WebSocket dau gia ----------------");
+
+    stompClient = StompClient(
+      config: StompConfig.SockJS(
+        url: 'http://192.168.1.134:8080/ws',
+        onConnect: onConnect,
+        onWebSocketError: (dynamic error) => print('Lỗi WebSocket: $error'),
+      ),
+    );
+    stompClient?.activate();
+  }
+
+  void onConnect(StompFrame frame) {
+    print("Đã kết nối WebSocket");
+
+    stompClient?.subscribe(
+      destination: '/topic/newbidding',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          var response = jsonDecode(frame.body!);
+          setState(() {
+            currentPrice = response['price'];
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text("🎉 Đã đặt giá thành công: \$$currentPrice")),
+            );
+          });
+        }
+      },
+    );
+  }
+
+  // 🔥 Đặt giá đấu giá mới
   Future<void> placeBid() async {
-    print(widget.item?.user);
     double? bidAmount = double.tryParse(_bidController.text);
     if (bidAmount == null || bidAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,37 +126,24 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
       );
       return;
     }
-    setState(() => isPlacingBid = true);
-    bool success = await ApiBiddingService().placeBid(widget.item!.itemId!, widget.item?.user!.id, bidAmount);
-    setState(() => isPlacingBid = false);
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("🎉 Đã đặt giá thành công: \$${bidAmount.toStringAsFixed(2)}")),
-      );
-      // // ✅ Cập nhật UI ngay lập tức
-      // setState(() {
-      //   if (updatedItem != null) {
-      //     updatedItem!.currentPrice = bidAmount;
-      //   }
-      // });
-      fetchItemDetails(); // 🔥 Gọi API để lấy giá mới nhất
+    BiddingRequest request = BiddingRequest(
+        price: bidAmount,
+        productId: widget.item!.itemId,
+        seller: widget.item!.user!.id,
+        userId: userId);
+    if (stompClient != null && stompClient!.connected) {
+      String messageJson = jsonEncode(request);
+      stompClient!.send(destination: "/app/create", body: messageJson);
+      _bidController.clear();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("🚨 Đặt giá thất bại! Vui lòng thử lại.")),
-      );
+      print("🚨 WebSocket vẫn chưa kết nối, tin nhắn không được gửi!");
     }
   }
-
-
-
-
 
   /// Gọi API để lấy danh sách sản phẩm sắp tới
   Future<void> fetchUpcomingItems() async {
     try {
-      print("🔍 Fetching upcoming auction items...");
       var fetchedItems = await apiService.fetchUpcomingAuctions();
-      print("✅ Fetched ${fetchedItems.length} upcoming items.");
 
       setState(() {
         upcomingItems = fetchedItems;
@@ -144,25 +170,20 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
   Future<void> fetchSimilarItems() async {
     String? categoryName = widget.item?.category?.category_name;
     if (categoryName == null || categoryName.isEmpty) {
-      print("⚠️ Category name is null or empty.");
       setState(() => isLoadingSimilarItems = false);
       return;
     }
 
     int? categoryId = await apiService.getCategoryIdByName(categoryName);
-    print("🔍 Category ID found: $categoryId"); // In ID ra console để debug
 
     if (categoryId == null) {
-      print("⚠️ Không tìm thấy ID danh mục cho: $categoryName");
       setState(() => isLoadingSimilarItems = false);
       return;
     }
 
     try {
-      print("🔍 Fetching items for category ID: $categoryId");
       var fetchedItems =
           await apiService.getItemsByCategory(categoryId.toString());
-      print("✅ API Response: ${fetchedItems.length} items");
 
       setState(() {
         similarItems = fetchedItems;
@@ -176,21 +197,17 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final item = updatedItem ?? widget.item; // 🔥 Sử dụng giá mới nếu có
-    // print("🔥 Hiển thị giá: Current Price = ${item.currentPrice}, Starting Price = ${item.startingPrice}");
+    final item = updatedItem ?? widget.item;
 
-    String? imageUrl =
-        (widget.item?.imagesList != null)
-            ? widget.item?.imagesList!.first
-            : 'https://via.placeholder.com/150';
+    String? imageUrl = (widget.item?.imagesList != null)
+        ? widget.item?.imagesList!.first
+        : 'https://via.placeholder.com/150';
 
-    String timeLeft = getTimeLeft(widget.item?.endDate as DateTime?);
+    String timeLeft = getTimeLeft(widget.item?.endDate);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.item?.itemName ?? 'Item Details'),
-        //title: Text(widget.item?.user?.id ?? 'Item Details'),
-
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -237,12 +254,14 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                        'Price: \$${item?.startingPrice ?? 0}',
+                    Text('Start Price: \$${item?.startingPrice ?? 0}',
                         style: const TextStyle(fontSize: 18)),
-                    Text('Time Left: $timeLeft',
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.red)),
+                    Text('Current Price: \$${currentPrice ?? 0}',
+                        style: const TextStyle(fontSize: 18)),
+                    Text(
+                      'Time Left: $timeLeft',
+                      style: const TextStyle(fontSize: 16, color: Colors.red),
+                    ),
                   ],
                 ),
               ],
@@ -349,10 +368,10 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                           itemCount: upcomingItems.length,
                           itemBuilder: (context, index) {
                             var item = upcomingItems[index];
-                            String itemImageUrl =
-                                (item.imagesList != null && item.imagesList!.isNotEmpty)
-                                    ? item.imagesList!.first
-                                    : 'https://via.placeholder.com/150';
+                            String itemImageUrl = (item.imagesList != null &&
+                                    item.imagesList!.isNotEmpty)
+                                ? item.imagesList!.first
+                                : 'https://via.placeholder.com/150';
 
                             return GestureDetector(
                               onTap: () {
@@ -425,10 +444,10 @@ class _Auction_ItemsDetailPageState extends State<Auction_ItemsDetailPage> {
                               .length, // 🔥 Hiển thị tất cả sản phẩm
                           itemBuilder: (context, index) {
                             var item = similarItems[index];
-                            String itemImageUrl =
-                                (item.imagesList != null && item.imagesList!.isNotEmpty)
-                                    ? item.imagesList!.first
-                                    : 'https://via.placeholder.com/150';
+                            String itemImageUrl = (item.imagesList != null &&
+                                    item.imagesList!.isNotEmpty)
+                                ? item.imagesList!.first
+                                : 'https://via.placeholder.com/150';
 
                             return GestureDetector(
                               onTap: () {

@@ -298,12 +298,6 @@ class _LoginPageState extends State<LoginPage> {
                     var response =
                         await _apiUserService.loginUser(email, password);
                     if (response != null) {
-                      print(
-                          "📢 Full API Response: $response"); // ✅ In toàn bộ dữ liệu trả về
-
-                      print(
-                          "📢 Full API Response: $response"); // ✅ In toàn bộ dữ liệu trả về
-
                       if (response.containsKey('result')) {
                         // ✅ Kiểm tra key 'result' tồn tại
                         var result = response['result'];
@@ -471,18 +465,20 @@ class _LoginPageState extends State<LoginPage> {
               // Các mục chỉ hiển thị khi người dùng đã đăng nhập
               if (_username != null) ...[
                 _buildListTile("My Account", () async {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
                   String? username = prefs.getString('username') ?? "Guest";
                   String? userId = prefs.getString('userId') ?? "Unknown ID";
                   String? token = prefs.getString('token') ?? "No Token";
 
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MyAccountPage(
-                      username: username,
-                      userId: userId,
-                      token: token,
-                    )),
+                    MaterialPageRoute(
+                        builder: (context) => MyAccountPage(
+                              username: username,
+                              userId: userId,
+                              token: token,
+                            )),
                   );
                 }),
                 _buildListTile("Create Auction", () {

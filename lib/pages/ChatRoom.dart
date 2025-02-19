@@ -61,12 +61,10 @@ class _ChatRoomState extends State<ChatRoom> {
     print("Đã kết nối WebSocket ----------------");
 
     stompClient = StompClient(
-
       config: StompConfig.SockJS(
         url: 'http://192.168.1.134:8080/ws',
         onConnect: onConnect,
         onWebSocketError: (dynamic error) => print('Lỗi WebSocket: $error'),
-
       ),
     );
     stompClient?.activate();
@@ -137,7 +135,7 @@ class _ChatRoomState extends State<ChatRoom> {
         String messageJson = jsonEncode(request);
         stompClient!.send(destination: "/app/sendMessage", body: messageJson);
       } else {
-        print("🚨 WebSocket vẫn chưa kết nối, tin nhắn không được gửi!");
+        print("WebSocket vẫn chưa kết nối, tin nhắn không được gửi!");
       }
 
       setState(() {
@@ -145,7 +143,7 @@ class _ChatRoomState extends State<ChatRoom> {
         msgController.clear();
       });
     } catch (e) {
-      print("❌ Lỗi khi gửi tin nhắn: $e");
+      print("Lỗi khi gửi tin nhắn: $e");
     }
   }
 
