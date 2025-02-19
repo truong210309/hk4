@@ -4,6 +4,7 @@ import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:fe/models/Category.dart';
 import 'package:fe/pages/Auction_ItemsDetailPage.dart';
 
+import '../models/Auction.dart';
 import 'HomePage.dart'; // Import the detail page
 
 class Auction_ItemsPage extends StatefulWidget {
@@ -17,17 +18,17 @@ class Auction_ItemsPage extends StatefulWidget {
 
 class _Auction_ItemsPageState extends State<Auction_ItemsPage> {
   final ApiAuction_ItemsService apiService = ApiAuction_ItemsService();
-  late Future<List<AuctionItems>> futureAuctionItems;
+  late Future<List<Auction>> futureAuctionItems;
 
   @override
   void initState() {
     super.initState();
-    futureAuctionItems = apiService.getAllAuctionItems();
+    futureAuctionItems = apiService.getAllAuction();
 
   }
 
-  Widget buildAuctionItemCard(AuctionItems item) {
-    String imageUrl = item.images?.isNotEmpty ?? false ? item.images!.first : 'https://via.placeholder.com/150';
+  Widget buildAuctionItemCard(Auction item) {
+    String imageUrl = item.imagesList?.isNotEmpty ?? false ? item.imagesList!.first : 'https://via.placeholder.com/150';
 
     return GestureDetector(
       onTap: () {
@@ -95,7 +96,7 @@ class _Auction_ItemsPageState extends State<Auction_ItemsPage> {
         elevation: 0,  // Optional, removes shadow under the app bar
       ),
       backgroundColor: Colors.white,  // Set the background color of the entire screen
-      body: FutureBuilder<List<AuctionItems>>(
+      body: FutureBuilder<List<Auction>>(
         future: futureAuctionItems,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -115,15 +116,15 @@ class _Auction_ItemsPageState extends State<Auction_ItemsPage> {
             return const Center(child: Text('No items found.'));
           }
 
-          List<AuctionItems> auctionItems = snapshot.data!;
-          List<AuctionItems> filteredItems = auctionItems
-              .where((item) => item.categoryId == widget.category.category_id)
+          List<Auction> auctionItems = snapshot.data!;
+          List<Auction> filteredItems = auctionItems
+              .where((item) => item.category?.category_id == widget.category.category_id)
               .toList();
 
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
-                futureAuctionItems = apiService.getAllAuctionItems();
+                futureAuctionItems = apiService.getAllAuction();
               });
             },
             child: GridView.builder(

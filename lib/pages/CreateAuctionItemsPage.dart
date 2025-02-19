@@ -21,18 +21,18 @@ class CreateAuctionItemsPage extends StatefulWidget {
 
 class _CreateAuctionItemsPageState extends State {
   final TextEditingController _itemNameController = TextEditingController();
-  final TextEditingController _startingPriceController = TextEditingController();
+  final TextEditingController _startingPriceController =
+      TextEditingController();
   final TextEditingController _bidStepController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   Category? _selectedCategory;
   List<Category> _categories = [];
   DateTime? _startDate;
   DateTime? _endDate;
-  List<File> _images = [];
+  final List<File> _images = [];
   String? currentUserId;
   double? _currentPrice;
   bool _isPickingImage = false; // Add this flag
-
 
   @override
   void initState() {
@@ -90,11 +90,9 @@ class _CreateAuctionItemsPageState extends State {
       final picker = ImagePicker();
       final pickedFiles = await picker.pickMultiImage();
 
-      if (pickedFiles != null) {
-        setState(() {
-          _images.addAll(pickedFiles.map((file) => File(file.path)));
-        });
-      }
+      setState(() {
+        _images.addAll(pickedFiles.map((file) => File(file.path)));
+      });
     } catch (e) {
       print("🔥 Error picking images: $e");
     } finally {
@@ -103,26 +101,29 @@ class _CreateAuctionItemsPageState extends State {
   }
 
   Future<void> _submitAuctionItem() async {
-
     if (_itemNameController.text.isEmpty ||
         _startingPriceController.text.isEmpty ||
         _bidStepController.text.isEmpty ||
         _selectedCategory == null ||
         _startDate == null ||
         _endDate == null ||
-        _images.isEmpty) { // ✅ Ensure at least one image is selected
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Please fill all required fields and upload at least one image")));
+        _images.isEmpty) {
+      // ✅ Ensure at least one image is selected
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              "Please fill all required fields and upload at least one image")));
       return;
     }
 
     if (double.tryParse(_startingPriceController.text) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please enter a valid starting price")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter a valid starting price")));
       return;
     }
 
     if (double.tryParse(_bidStepController.text) == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please enter a valid bid step")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter a valid bid step")));
       return;
     }
 
@@ -133,12 +134,10 @@ class _CreateAuctionItemsPageState extends State {
 
     if (currentUserId == null) {
       print("❌ User ID is not loaded yet.");
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("User ID is not available, please try again.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("User ID is not available, please try again.")));
       return;
     }
-
-
 
     // ✅ Step 1: Upload images to Cloudinary and get URLs
     List<String> uploadedImageUrls = [];
@@ -147,8 +146,8 @@ class _CreateAuctionItemsPageState extends State {
       if (imageUrl != null) {
         uploadedImageUrls.add(imageUrl);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Failed to upload some images. Please try again.")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Failed to upload some images. Please try again.")));
         return;
       }
     }
@@ -159,8 +158,12 @@ class _CreateAuctionItemsPageState extends State {
       startingPrice: double.parse(_startingPriceController.text),
       bidStep: (_bidStepController.text),
       description: _descriptionController.text,
-      startDate: _startDate != null ? DateTime.parse(DateFormat('yyyy-MM-dd').format(_startDate!)) : null,
-      endDate: _endDate != null ? DateTime.parse(DateFormat('yyyy-MM-dd').format(_endDate!)) : null,
+      startDate: _startDate != null
+          ? DateTime.parse(DateFormat('yyyy-MM-dd').format(_startDate!))
+          : null,
+      endDate: _endDate != null
+          ? DateTime.parse(DateFormat('yyyy-MM-dd').format(_endDate!))
+          : null,
       images: uploadedImageUrls, // ✅ Now using URLs instead of Base64
       currentPrice: _currentPrice,
       sellerId: currentUserId,
@@ -171,8 +174,11 @@ class _CreateAuctionItemsPageState extends State {
     itemData['category_id'] = _selectedCategory?.category_id;
     itemData['images'] = uploadedImageUrls;
 
-    itemData['start_date'] = _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null;
-    itemData['end_date'] = _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null;
+    itemData['start_date'] = _startDate != null
+        ? DateFormat('yyyy-MM-dd').format(_startDate!)
+        : null;
+    itemData['end_date'] =
+        _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null;
     // 🚀 Log auction item details
     print("📌 Final Auction Item Data: ${jsonEncode(itemData)}");
 
@@ -181,13 +187,12 @@ class _CreateAuctionItemsPageState extends State {
           _itemNameController.text,
           itemData,
           _images.first // ✅ Pass the first image file
-      );
-
-      print("🌍 API Response: $success");
+          );
 
       if (success) {
         print("🚀 _submitAuctionItem() function called!"); // ✅ Debugging
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Auction item created successfully")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Auction item created successfully")));
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -199,15 +204,16 @@ class _CreateAuctionItemsPageState extends State {
         print("📦 Request Payload: ${jsonEncode(itemData)}");
         print("🔗 API Endpoint: /api/auction/add");
 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to create auction item")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to create auction item")));
       }
     } catch (e, stacktrace) {
       print("🔥 Exception occurred: $e");
       print("📜 Stacktrace: $stacktrace");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An error occurred while creating the auction item.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("An error occurred while creating the auction item.")));
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -221,17 +227,21 @@ class _CreateAuctionItemsPageState extends State {
             children: [
               _buildInputBox("Item Name", _itemNameController),
               _buildDropdown(),
-              _buildInputBox("Starting Price", _startingPriceController, isNumber: true),
+              _buildInputBox("Starting Price", _startingPriceController,
+                  isNumber: true),
               _buildInputBox("Bid Step", _bidStepController),
-              _buildInputBox("Description", _descriptionController, isMultiline: true),
+              _buildInputBox("Description", _descriptionController,
+                  isMultiline: true),
               Row(
                 children: [
                   Expanded(
-                    child: _buildDatePicker("Start Date", _startDate, () => _pickDate(context, true)),
+                    child: _buildDatePicker("Start Date", _startDate,
+                        () => _pickDate(context, true)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _buildDatePicker("End Date", _endDate, () => _pickDate(context, false)),
+                    child: _buildDatePicker(
+                        "End Date", _endDate, () => _pickDate(context, false)),
                   ),
                 ],
               ),
@@ -252,10 +262,8 @@ class _CreateAuctionItemsPageState extends State {
     );
   }
 
-
-
-
-  Widget _buildInputBox(String label, TextEditingController controller, {bool isNumber = false, bool isMultiline = false}) {
+  Widget _buildInputBox(String label, TextEditingController controller,
+      {bool isNumber = false, bool isMultiline = false}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -305,7 +313,8 @@ class _CreateAuctionItemsPageState extends State {
   }
 
   Widget _buildDatePicker(String label, DateTime? date, VoidCallback onTap) {
-    String formattedDate = date != null ? DateFormat('yyyy-MM-dd').format(date) : label;
+    String formattedDate =
+        date != null ? DateFormat('yyyy-MM-dd').format(date) : label;
 
     return GestureDetector(
       onTap: onTap,
@@ -340,7 +349,8 @@ class _CreateAuctionItemsPageState extends State {
               border: Border.all(color: Colors.grey),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Center(child: Text("Add Images", style: TextStyle(fontSize: 16))),
+            child: const Center(
+                child: Text("Add Images", style: TextStyle(fontSize: 16))),
           ),
         ),
         const SizedBox(height: 10),
@@ -367,7 +377,8 @@ class _CreateAuctionItemsPageState extends State {
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 16),
                     ),
                   ),
                 ),
@@ -378,11 +389,11 @@ class _CreateAuctionItemsPageState extends State {
       ],
     );
   }
-
 }
 
 Future<String?> uploadImageToCloudinary(File imageFile) async {
-  const String cloudinaryUrl = "https://api.cloudinary.com/v1_1/dbt0u51ib/image/upload";
+  const String cloudinaryUrl =
+      "https://api.cloudinary.com/v1_1/dbt0u51ib/image/upload";
   const String uploadPreset = "duyhau"; // Set in Cloudinary settings
 
   try {
@@ -405,4 +416,3 @@ Future<String?> uploadImageToCloudinary(File imageFile) async {
     return null;
   }
 }
-

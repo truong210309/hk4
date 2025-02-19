@@ -16,11 +16,14 @@ class User {
     map["password"] = password;
     map["confirmpassword"] = confirmpassword;
     map["email"] = email;
+    map["id"] = id;
+
     return map;
   }
 
   User.fromJson(dynamic json){
     name = json["name"];
+    id = json["id"];
     password = json["password"];
     confirmpassword = json["confirmpassword"];
     email = json["email"];

@@ -1,8 +1,8 @@
 class Bidding {
   int? id;
   double? price;
-  int? itemId;  // Liên kết với Auction_Items
-  String? userId;  // Người đấu giá
+  int? itemId;
+  String? userId;
 
   Bidding({
     this.id,
@@ -16,7 +16,9 @@ class Bidding {
     return Bidding(
       id: json['id'],
       price: json['price'],
-      itemId: json['auction_Items'] != null ? json['auction_Items']['item_id'] : null,
+      itemId: json['auction_Items'] != null
+          ? json['auction_Items']['item_id']
+          : null,
       userId: json['user'] != null ? json['user']['id'] : null,
     );
   }

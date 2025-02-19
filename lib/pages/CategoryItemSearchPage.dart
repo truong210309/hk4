@@ -6,6 +6,7 @@ import 'package:fe/services/ApiAuction_ItemsService.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/Auction.dart';
 import 'HomePage.dart';
 
 class CategoryItemSearchPage extends StatefulWidget {
@@ -19,12 +20,12 @@ class _CategoryItemSearchPageState extends State<CategoryItemSearchPage> {
   final ApiCategoryService apiService = ApiCategoryService();
   final ApiAuction_ItemsService auctionService = ApiAuction_ItemsService();
   late Future<List<Category>> futureCategories;
-  late Future<List<AuctionItems>> futureAuctionItems;
+  late Future<List<Auction>> futureAuctionItems;
   TextEditingController _searchController = TextEditingController();
   FocusNode _searchFocusNode = FocusNode();
   List<String> _recentSearches = [];
-  List<AuctionItems> _filteredItems = [];
-  List<AuctionItems> _allItems = [];
+  List<Auction> _filteredItems = [];
+  List<Auction> _allItems = [];
   bool _showRecentSearches = false;
   bool _showSuggestions = false;
 
@@ -32,7 +33,7 @@ class _CategoryItemSearchPageState extends State<CategoryItemSearchPage> {
   void initState() {
     super.initState();
     futureCategories = apiService.getAllCategory();
-    futureAuctionItems = auctionService.getAllAuctionItems();
+    futureAuctionItems = auctionService.getAllAuction();
     _loadRecentSearches();
 
     futureAuctionItems.then((items) {
@@ -205,8 +206,8 @@ class _CategoryItemSearchPageState extends State<CategoryItemSearchPage> {
                 final item = _filteredItems[index];
                 return ListTile(
                   leading: Image.network(
-                    item.images?.isNotEmpty ?? false
-                        ? item.images!.first
+                    item.imagesList?.isNotEmpty ?? false
+                        ? item.imagesList!.first
                         : 'https://via.placeholder.com/150',
                     width: 50,
                     height: 50,
@@ -215,12 +216,12 @@ class _CategoryItemSearchPageState extends State<CategoryItemSearchPage> {
                   title: Text(item.itemName ?? 'No Name'),
                   subtitle: Text(item.description ?? ''),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => Homepage(initialIndex: 0, selectedItem: item), // 🔥 Mở trong HomePage
-                      ),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => Homepage(initialIndex: 0, selectedItem: item), // 🔥 Mở trong HomePage
+                    //   ),
+                    // );
                   },
                 );
               },

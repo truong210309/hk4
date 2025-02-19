@@ -2,6 +2,7 @@ import 'package:fe/pages/ChatList.dart';
 import 'package:fe/pages/LoginPage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/Auction.dart';
 import '../models/Auction_Items.dart';
 import '../models/Category.dart';
 import 'Auction_ItemsDetailPage.dart';
@@ -13,8 +14,8 @@ import 'MyBidsPage.dart';
 
 class Homepage extends StatefulWidget {
   final int initialIndex;
-  final AuctionItems? selectedItem; // 🔥 Thêm tham số này
-
+  // final AuctionItems? selectedItem; // 🔥 Thêm tham số này
+  final Auction? selectedItem;
   const Homepage({super.key, this.initialIndex = 0, this.selectedItem});
 
   @override
@@ -23,8 +24,8 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   late int _selectedIndex;
-  AuctionItems? _selectedItem;
-
+  // AuctionItems? _selectedItem;
+  Auction? _selectedItem;
   @override
   void initState() {
     super.initState();
@@ -45,7 +46,7 @@ class _HomepageState extends State<Homepage> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     } else {
-      print("✅ Đã tìm thấy token và userId, tiếp tục đăng nhập!");
+      // print("✅ Đã tìm thấy token và userId, tiếp tục đăng nhập!");
     }
   }
 

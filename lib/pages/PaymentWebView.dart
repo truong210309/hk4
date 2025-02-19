@@ -7,7 +7,8 @@ import 'HomePage.dart';
 class PaymentWebView extends StatefulWidget {
   final String paymentUrl;
   final String productId; // ✅ Thêm productId để gọi API callback
-  const PaymentWebView({super.key, required this.paymentUrl, required this.productId});
+  const PaymentWebView(
+      {super.key, required this.paymentUrl, required this.productId});
   @override
   State<PaymentWebView> createState() => _PaymentWebViewState();
 }
@@ -31,11 +32,10 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const MyBidsPage()),
-                      (route) => false, // Xóa toàn bộ các trang trước đó
+                  (route) => false, // Xóa toàn bộ các trang trước đó
                 );
               });
             }
-
           },
         ),
       )

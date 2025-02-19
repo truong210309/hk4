@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/Auction.dart';
 import '../models/Auction_Items.dart';
 import '../services/ApiAuction_ItemsService.dart';
 import 'LoginPage.dart';
@@ -16,8 +17,8 @@ class MyAuctionPage extends StatefulWidget {
 
 class _MyAuctionPageState extends State<MyAuctionPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<AuctionItems> ongoingAuctions = [];
-  List<AuctionItems> expiredAuctions = [];
+  List<Auction> ongoingAuctions = [];
+  List<Auction> expiredAuctions = [];
   bool isLoading = true;
 
   @override
@@ -53,11 +54,11 @@ class _MyAuctionPageState extends State<MyAuctionPage> with SingleTickerProvider
   Future<void> _fetchMyAuctions() async {
     try {
       ApiAuction_ItemsService apiService = ApiAuction_ItemsService();
-      List<AuctionItems> auctions = await apiService.fetchAuctionsByCreator(widget.userId);
+      List<Auction> auctions = await apiService.fetchAuctionsByCreator(widget.userId);
 
       DateTime now = DateTime.now();
-      List<AuctionItems> ongoing = [];
-      List<AuctionItems> expired = [];
+      List<Auction> ongoing = [];
+      List<Auction> expired = [];
 
       for (var auction in auctions) {
         if (auction.startDate != null && auction.endDate != null) {
@@ -118,7 +119,7 @@ class _MyAuctionPageState extends State<MyAuctionPage> with SingleTickerProvider
     );
   }
 
-  Widget _buildAuctionList(List<AuctionItems> auctions, bool isSold) {
+  Widget _buildAuctionList(List<Auction> auctions, bool isSold) {
     return ListView.builder(
       itemCount: auctions.length,
       itemBuilder: (context, index) {
@@ -137,7 +138,7 @@ class _MyAuctionPageState extends State<MyAuctionPage> with SingleTickerProvider
           auction.startingPrice != null ? "\$${auction.startingPrice}" : "No Price",
           formattedEndDate, // ✅ Truyền vào String, không phải Text()
           formattedStartDate,
-          auction.images != null && auction.images!.isNotEmpty ? auction.images!.first : "",
+          auction.imagesList != null && auction.imagesList!.isNotEmpty ? auction.imagesList!.first : "",
           isSold,
         );
       },
