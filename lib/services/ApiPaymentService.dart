@@ -8,7 +8,7 @@ import '../models/Auction_Items.dart';
 
 class ApiPaymentService {
   static const String _baseUrl =
-      "http://173.16.17.166:8080"; // ✅ Đổi thành URL backend của bạn
+      "http://172.16.2.0:8080"; // ✅ Đổi thành URL backend của bạn
 
   Future<String?> createPayment(
       String productId, double amount, String orderId) async {

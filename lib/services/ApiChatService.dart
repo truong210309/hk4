@@ -10,9 +10,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiChatService {
-
   static const String urlChat = "${UrlAPI.url}/chatroom";
-
 
   Future<List<ChatRoomResponse>> getAllRoomByUser(String userId) async {
     final String url = "$urlChat/room/$userId";
@@ -27,10 +25,33 @@ class ApiChatService {
           "Content-Type": "application/json",
         },
       );
-      print(response);
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         return jsonData.map((item) => ChatRoomResponse.fromJson(item)).toList();
+      } else {
+        throw Exception(
+            'Failed to load chat rooms. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching category data: $e');
+    }
+  }
+
+  Future<ChatRoomResponse> createRoom(int? itemId, String userId) async {
+    final String url = "$urlChat/room/$itemId";
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
+      final response = await http.post(Uri.parse(url),
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode({"buyerId": userId}));
+      print(response);
+      if (response.body.isNotEmpty && response.statusCode == 200) {
+        return ChatRoomResponse.fromJson(jsonDecode(response.body));
       } else {
         throw Exception(
             'Failed to load chat rooms. Status Code: ${response.statusCode}');
@@ -53,7 +74,6 @@ class ApiChatService {
           "Content-Type": "application/json",
         },
       );
-      print(response);
       if (response.statusCode == 200) {
         List<dynamic> jsonData = json.decode(response.body);
         return jsonData
@@ -113,7 +133,7 @@ class ApiChatService {
     if (request.images != null && request.images!.isNotEmpty) {
       for (var imagePath in request.images!) {
         var multipartFile =
-            await http.MultipartFile.fromPath('images', imagePath);
+        await http.MultipartFile.fromPath('images', imagePath);
         requestMultipart.files.add(multipartFile);
       }
     }
@@ -124,7 +144,6 @@ class ApiChatService {
     if (response.statusCode == 200) {
       return ChatMessageResponse.fromJson(jsonDecode(response.body));
     } else {
-      print("❌ Lỗi ${response.statusCode}: ${response.body}");
       throw Exception(
           'Failed to send message. Status Code: ${response.statusCode}');
     }

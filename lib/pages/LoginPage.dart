@@ -295,7 +295,7 @@ class _LoginPageState extends State<LoginPage> {
                             password: passwordController.text,
                             phone: phoneController.text,
                             address: addressController.text,
-                            dob: selectedDOB,
+                        //    dob: selectedDOB,
                           );
 
                           bool isSuccess =

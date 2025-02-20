@@ -35,7 +35,7 @@ class WonItemDetailPage extends StatefulWidget {
 
 class _WonItemDetailPageState extends State<WonItemDetailPage> {
   late ApiAuction_ItemsService apiService;
-  late ApiBiddingService biddingService = ApiBiddingService();
+//  late ApiBiddingService biddingService = ApiBiddingService();
 
   List<Auction> similarItems = [];
   bool isLoadingSimilarItems = true;

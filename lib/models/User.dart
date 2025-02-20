@@ -9,7 +9,7 @@ class User {
  String? phone;
 DateTime? dob;
 String? address;
-  User({this.id,this.address,this.dob,this.phone,this.name, this.password, this.email,this.confirmpassword});
+  User({this.id,this.address,this.phone,this.name, this.password, this.email,this.confirmpassword});
 
 
 

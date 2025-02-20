@@ -63,7 +63,7 @@ class _ChatRoomState extends State<ChatRoom> {
     stompClient = StompClient(
 
       config: StompConfig.SockJS(
-        url: 'http://192.168.1.134:8080/ws',
+        url: 'http://172.16.2.0:8080/ws',
         onConnect: onConnect,
         onWebSocketError: (dynamic error) => print('Lỗi WebSocket: $error'),
 

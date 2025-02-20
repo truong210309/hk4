@@ -1,4 +1,8 @@
 
+import 'package:fe/models/Bidding.dart';
+import 'package:fe/models/BiddingRequest.dart';
+import 'package:fe/models/BiddingResponse.dart';
+
 import 'Category.dart';
 import 'User.dart';
 
@@ -20,10 +24,12 @@ class Auction {
   User? user;
   User? buyer;
  // String? sellerName;
+  BiddingResponse? bidding;
   Auction(
       {
 
      //   this.sellerName,
+        this.bidding,
         this.itemId,
         this.itemName,
         this.description,
@@ -44,6 +50,7 @@ class Auction {
     final map = <String, dynamic>{};
   //  map["sellerName"] = sellerName;
     map["item_id"] = itemId;
+    map["biddingResponse"] = bidding;
     map["item_name"] = itemName;
     map["description"] = description;
     map["images"] = imagesList;
@@ -64,6 +71,9 @@ class Auction {
     }
     if (buyer != null) {
       map["buyer"] = buyer?.toJson();
+    }
+    if (bidding != null) {
+      map["bidding"] = bidding?.toJson();
     }
     return map;
   }
@@ -160,6 +170,10 @@ class Auction {
     } else {
       endDate = null;
     }
+
+    bidding = json["bidding"] != null
+        ? BiddingResponse.fromJson(json["bidding"])
+        : null;
 
     bidStep = json["bid_step"];
     issell = json["sell"];
